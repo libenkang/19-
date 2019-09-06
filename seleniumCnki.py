@@ -1,76 +1,97 @@
-#!/usr/bin/env python
-# coding: utf-8
 from selenium import webdriver
-# from pyquery import PyQuery
-from selenium.webdriver.common.action_chains import ActionChains    #模拟鼠标动作的类
 import time
+import pandas
+from selenium.webdriver.common.action_chains import ActionChains  # 模拟鼠标动作的类
 
-def per():
-    for j in range(2,22):
-        currXpath = '//*[@id="ctl00"]/table/tbody/tr[2]/td/table/tbody/tr['+str(j)+']'
-        headerinfo = []
-        for i in range(1, 7):
-            headerinfo.append(browser.find_element_by_xpath(currXpath+ '/td['+str(i)+']').text)
-        print(headerinfo)
 
-        #进入论文详情页
-        ActionChains(browser).double_click(browser.find_element_by_xpath(currXpath+ '/td[2]/a')).perform()
+class spider:
+    def __init__(self, keyword, endPage):
+        self.keyword = keyword
+        # self.startPage = start
+        self.endPage = endPage
+        self.browser = None
+        self.data = []
 
-        #获取窗口句柄，切换窗口
-        mainWindow = browser.current_window_handle
-        windows =browser.window_handles
+    def setting(self):
+        options = webdriver.ChromeOptions()
+        # 设置chrome不加载图片，提高速度
+        options.add_experimental_option("prefs", {"profile.managed_default_content_settings.images": 2})
+        # 指定下载目录
+        prefs = {'profile.default_content_settings.popups': 0, 'download.default_directory': 'e:\\test'}
+        options.add_experimental_option('prefs', prefs)
+        #         options.add_argument('--no--sandbox')
+        #         options.add_argument('--headless')
+        self.browser = webdriver.Chrome(options=options)
 
-        #切换窗口
-        browser.switch_to.window(windows[-1])
+        browser = webdriver.Chrome(options=options)
 
-        #//*[@id="ChDivSummary"]
-        #爬取摘要
-        try:
-            print(browser.find_element_by_xpath('//*[@id="ChDivSummary"]').text)
-        except:
-            pass
+    def getCurrentPage(self, browser):
+        for j in range(2, 22):
+            currXpath = '//*[@id="ctl00"]/table/tbody/tr[2]/td/table/tbody/tr[' + str(j) + ']'
+            info = []
+            for i in range(1, 7):
+                info.append(browser.find_element_by_xpath(currXpath + '/td[' + str(i) + ']').text)
 
-        #关键词//*[@id="mainArea"]/div[3]/div[3]/div[1]/p[2]
-        #//*[@id="mainArea"]/div[3]/div[4]/div[1]/p[2]
+            # 进入论文详情页
+            ActionChains(browser).double_click(browser.find_element_by_xpath(currXpath + '/td[2]/a')).perform()
 
-        try:
-           print(browser.find_element_by_xpath('//*[@class="wxBaseinfo"]/p[2]').text)
-        except:
-           pass
-        #pdf下载链接
-        try:
-            print(browser.find_element_by_xpath('//*[@id="pdfDown"]').get_attribute("href"))
-        except:
-            pass
-        browser.switch_to.window(mainWindow)
+            # 获取窗口句柄，切换窗口
+            mainWindow = browser.current_window_handle
+            windows = browser.window_handles
+            # 切换至最新打开的窗口
+            browser.switch_to.window(windows[-1])
+
+            # 爬取摘要
+            try:
+                info.append(browser.find_element_by_xpath('//*[@id="ChDivSummary"]').text)
+            except:
+                info.append('')
+                pass
+
+            # 爬取关键词//*[@id="mainArea"]/div[3]/div[3]/div[1]/p[2]
+            try:
+                info.append(browser.find_element_by_xpath('//*[@class="wxBaseinfo"]/p[2]').text)
+            except:
+                info.append('')
+                pass
+
+            # 爬取下载链接
+            try:
+                info.append(browser.find_element_by_xpath('//*[@id="pdfDown"]').get_attribute("href"))
+            except:
+                info.append('')
+                pass
+
+            browser.switch_to.window(mainWindow)
+            browser.switch_to.frame('iframeResult')
+            self.data.append(info)
+
+    def nextPage(self, browser):
+        ActionChains(browser).double_click(browser.find_element_by_xpath('//*[@id="ctl00"]/table/tbody/tr[3]/td/table/tbody/tr/td/div/a[last()]')).perform()
+
+    def downLoad(self):
+        urls = [self.data[i][-1] for i in range(len(self.data)) if self.data[i][-1] != '']
+        self.browser.get(urls[i] for i in urls)
+
+    def run(self):
+        self.setting()
+        browser = self.browser
+        browser.get('https://www.cnki.net/')
+        browser.find_element_by_xpath('//*[@id="txt_SearchText"]').send_keys(self.keyword)
+        ActionChains(browser).double_click(
+            browser.find_element_by_xpath('/html/body/div[2]/div[2]/div/div[1]/input[2]')).perform()
         browser.switch_to.frame('iframeResult')
+        for i in range(self.endPage):
+            self.getCurrentPage(browser)
+            if i != self.endPage - 1:
+                self.nextPage()
+        return self.data
 
-# browser.current_url
 
-if __name__ == '__main__':
-    options = webdriver.ChromeOptions()
-    # 设置chrome不加载图片，提高速度
-    options.add_experimental_option("prefs", {"profile.managed_default_content_settings.images": 2})
-
-    browser = webdriver.Chrome(options=options)
-    browser.get('https://www.cnki.net/')
-    # browser.get_attribute(key)#获取key属性名对应的属性值`
-
-    # input搜索内容
-    key_word = 'python'
-    startPage = 1
-    endPage = 1
-    browser.find_element_by_xpath('//*[@id="txt_SearchText"]').send_keys(key_word)
-
-    # 点击搜索/html/body/div[2]/div[2]/div/div[1]/input[2]
-    ActionChains(browser).double_click(
-        browser.find_element_by_xpath('/html/body/div[2]/div[2]/div/div[1]/input[2]')).perform()
-
-    time.sleep(3)
-    # 跳转到frame框架中
-    browser.switch_to.frame('iframeResult')
-
-    # #将当前网页缓存到本地
-    # with open('zw.html','w',encoding='utf-8') as f:
-    #     f.write(browser.page_source)
-    per()
+# 输入关键词，起止页
+key_wold = '大数据'
+# startPage = 1
+endPage = 2
+sp = spider(key_wold, endPage)
+data = sp.run()
+sp.downLoad()
