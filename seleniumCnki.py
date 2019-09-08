@@ -1,3 +1,4 @@
+# %load seleniumCnki.py
 from selenium import webdriver
 import time
 import pandas
@@ -9,28 +10,27 @@ class spider:
         self.keyword = keyword
         # self.startPage = start
         self.endPage = endPage
-        self.browser = None
         self.data = []
+        self.savePath = ''
 
     def setting(self):
+        self.savePath = "e:\\test\\" + self.keyword
         options = webdriver.ChromeOptions()
+
         # 设置chrome不加载图片，提高速度
-        options.add_experimental_option("prefs", {"profile.managed_default_content_settings.images": 2})
         # 指定下载目录
-        prefs = {'profile.default_content_settings.popups': 0, 'download.default_directory': 'e:\\test'}
+        prefs = {"profile.managed_default_content_settings.images": 2, 'profile.default_content_settings.popups': 0,
+                 'download.default_directory': self.savePath}
         options.add_experimental_option('prefs', prefs)
         #         options.add_argument('--no--sandbox')
         #         options.add_argument('--headless')
-        self.browser = webdriver.Chrome(options=options)
-
         browser = webdriver.Chrome(options=options)
+        return browser
 
     def getCurrentPage(self, browser):
         for j in range(2, 22):
             currXpath = '//*[@id="ctl00"]/table/tbody/tr[2]/td/table/tbody/tr[' + str(j) + ']'
-            info = []
-            for i in range(1, 7):
-                info.append(browser.find_element_by_xpath(currXpath + '/td[' + str(i) + ']').text)
+            info = [browser.find_element_by_xpath(currXpath + '/td[' + str(i) + ']').text for i in range(1, 7)]
 
             # 进入论文详情页
             ActionChains(browser).double_click(browser.find_element_by_xpath(currXpath + '/td[2]/a')).perform()
@@ -67,15 +67,15 @@ class spider:
             self.data.append(info)
 
     def nextPage(self, browser):
-        ActionChains(browser).double_click(browser.find_element_by_xpath('//*[@id="ctl00"]/table/tbody/tr[3]/td/table/tbody/tr/td/div/a[last()]')).perform()
+        ActionChains(browser).double_click(browser.find_element_by_xpath(
+            '//*[@id="ctl00"]/table/tbody/tr[3]/td/table/tbody/tr/td/div/a[last()]')).perform()
 
-    def downLoad(self):
-        urls = [self.data[i][-1] for i in range(len(self.data)) if self.data[i][-1] != '']
-        self.browser.get(urls[i] for i in urls)
+    def downLoad(self, browser, urls):
+        time.sleep(2)
+        [browser.get(urls[i]) for i in range(len(urls)) if urls[i] != None]
 
     def run(self):
-        self.setting()
-        browser = self.browser
+        browser = self.setting()
         browser.get('https://www.cnki.net/')
         browser.find_element_by_xpath('//*[@id="txt_SearchText"]').send_keys(self.keyword)
         ActionChains(browser).double_click(
@@ -84,14 +84,36 @@ class spider:
         for i in range(self.endPage):
             self.getCurrentPage(browser)
             if i != self.endPage - 1:
-                self.nextPage()
+                self.nextPage(browser)
+
+        df = pandas.DataFrame(self.data)
+        pandas.set_option('display.max_columns', None)
+        pandas.set_option('display.max_rows', None)
+        pandas.set_option('display.max_colwidth', 1000)
+        df.columns = ['序号', '题名', '作者', '来源', '发表时间', '数据库', '摘要', '关键词', '下载地址']
+        html = df.to_html(index=False, justify='center')
+        html = html.replace('class="dataframe"', 'class="dataframe" bgcolor=#F1E1FF ')
+        row = re.findall('https(.*)</td>', html)
+        for i in range(len(row)):
+            html = html.replace('https' + row[i], '<a style="display:block" href="https' + row[i] + '">下载</a>')
+        with open(self.savePath + "mypage.html", "w", encoding='utf-8') as file:
+            file.write(html)
+
+        browser.get(self.savePath + 'mypage.html')
+
+        chioce = input('Downloads all? Y/N')
+        if chioce == 'Y':
+            urls = [self.data[i][-1] for i in range(len(self.data)) if self.data[i][-1] != '']
+            self.downLoad(browser, urls)
+            print('files saved in ' + self.savePath)
+        browser.quit()
         return self.data
 
 
-# 输入关键词，起止页
-key_wold = '大数据'
-# startPage = 1
-endPage = 2
-sp = spider(key_wold, endPage)
-data = sp.run()
-sp.downLoad()
+if __name__ == '__main__':
+    # 输入关键词，起止页
+    key_wold = input('请输入关键词：')
+    # startPage = 1
+    endPage = int(input('请输入页数：'))
+    sp = spider(key_wold, endPage)
+    sp.run()
