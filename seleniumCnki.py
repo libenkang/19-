@@ -74,6 +74,21 @@ class spider:
         time.sleep(2)
         [browser.get(urls[i]) for i in range(len(urls)) if urls[i] != None]
 
+    def myPage(self, data):
+        df = pandas.DataFrame(data)
+        pandas.set_option('display.max_columns', None)
+        pandas.set_option('display.max_rows', None)
+        pandas.set_option('display.max_colwidth', 1000)
+        df.columns = ['序号', '题名', '作者', '来源', '发表时间', '数据库', '摘要', '关键词', '下载地址']
+        html = df.to_html(index=False, justify='center')
+        html = html.replace('class="dataframe"', 'class="dataframe" bgcolor=#F1E1FF ')
+        row = re.findall('https(.*)</td>', html)
+        for i in range(len(row)):
+            html = html.replace('https' + row[i], '<a style="display:block" href="https' + row[i] + '">下载</a>')
+        with open(self.savePath + "mypage.html", "w", encoding='utf-8') as file:
+            file.write(html)
+        return self.savePath + "mypage.html"
+
     def run(self):
         browser = self.setting()
         browser.get('https://www.cnki.net/')
@@ -86,20 +101,7 @@ class spider:
             if i != self.endPage - 1:
                 self.nextPage(browser)
 
-        df = pandas.DataFrame(self.data)
-        pandas.set_option('display.max_columns', None)
-        pandas.set_option('display.max_rows', None)
-        pandas.set_option('display.max_colwidth', 1000)
-        df.columns = ['序号', '题名', '作者', '来源', '发表时间', '数据库', '摘要', '关键词', '下载地址']
-        html = df.to_html(index=False, justify='center')
-        html = html.replace('class="dataframe"', 'class="dataframe" bgcolor=#F1E1FF ')
-        row = re.findall('https(.*)</td>', html)
-        for i in range(len(row)):
-            html = html.replace('https' + row[i], '<a style="display:block" href="https' + row[i] + '">下载</a>')
-        with open(self.savePath + "mypage.html", "w", encoding='utf-8') as file:
-            file.write(html)
-
-        browser.get(self.savePath + 'mypage.html')
+        browser.get(self.myPage(self.data))
 
         chioce = input('Downloads all? Y/N')
         if chioce == 'Y':
