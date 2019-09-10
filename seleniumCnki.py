@@ -1,9 +1,9 @@
-# %load seleniumCnki.py
 from selenium import webdriver
 import time
+import re
 import pandas
 from selenium.webdriver.common.action_chains import ActionChains  # 模拟鼠标动作的类
-
+from samilarrate import samilarRate
 
 class spider:
     def __init__(self, keyword, endPage):
@@ -50,7 +50,7 @@ class spider:
 
             # 爬取关键词//*[@id="mainArea"]/div[3]/div[3]/div[1]/p[2]
             try:
-                info.append(browser.find_element_by_xpath('//*[@class="wxBaseinfo"]/p[2]').text)
+                info.append(browser.find_element_by_xpath('//*[@id="catalog_KEYWORD"]/..').text)
             except:
                 info.append('')
                 pass
@@ -62,6 +62,7 @@ class spider:
                 info.append('')
                 pass
 
+            browser.close()
             browser.switch_to.window(mainWindow)
             browser.switch_to.frame('iframeResult')
             self.data.append(info)
@@ -73,14 +74,23 @@ class spider:
     def downLoad(self, browser, urls):
         time.sleep(2)
         [browser.get(urls[i]) for i in range(len(urls)) if urls[i] != None]
+        print('files saved in ' + self.savePath)
 
-    def myPage(self, data):
+    def myPage(self, data, sorft=None):
         df = pandas.DataFrame(data)
         pandas.set_option('display.max_columns', None)
         pandas.set_option('display.max_rows', None)
         pandas.set_option('display.max_colwidth', 1000)
         df.columns = ['序号', '题名', '作者', '来源', '发表时间', '数据库', '摘要', '关键词', '下载地址']
-        html = df.to_html(index=False, justify='center')
+        if sorft is not None:
+            keyword = list(df[df["序号"] == sorft]["摘要"])
+            texts = list(df["摘要"])
+            result,rate = samilarRate(df["摘要"],keyword[0])
+            df["rate"] = rate
+            df.sort_values("rate", ascending=False, inplace=True)
+            df.index = [i + 1 for i in range(len(data))]
+
+        html = df.to_html(index=True, justify='center')
         html = html.replace('class="dataframe"', 'class="dataframe" bgcolor=#F1E1FF ')
         row = re.findall('https(.*)</td>', html)
         for i in range(len(row)):
@@ -96,6 +106,7 @@ class spider:
         ActionChains(browser).double_click(
             browser.find_element_by_xpath('/html/body/div[2]/div[2]/div/div[1]/input[2]')).perform()
         browser.switch_to.frame('iframeResult')
+        time.sleep(1)
         for i in range(self.endPage):
             self.getCurrentPage(browser)
             if i != self.endPage - 1:
@@ -103,13 +114,19 @@ class spider:
 
         browser.get(self.myPage(self.data))
 
-        chioce = input('Downloads all? Y/N')
+        while(True):
+            print("请输入论文序号，退出请按q")
+            sorft = input("根据论文__内容的相似度进行排序： ")
+            if sorft is 'q':
+                break
+            else:
+                browser.get(self.myPage(self.data, sorft))
+
+        chioce = input('Downloads all? Y/N: ')
         if chioce == 'Y':
             urls = [self.data[i][-1] for i in range(len(self.data)) if self.data[i][-1] != '']
             self.downLoad(browser, urls)
-            print('files saved in ' + self.savePath)
         browser.quit()
-        return self.data
 
 
 if __name__ == '__main__':
