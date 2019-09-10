@@ -21,11 +21,11 @@ Python3 + selenium + Chrome浏览器 + chromedrive
 
 程序提示“Downloads all? Y/N：”，输入Y，批量下载论文，N，程序运行完毕，关闭chrome浏览器
 
-## 已知问题
+### 已知问题
 selenium模拟人的动作操作浏览器，每次打开链接会在浏览器中打开新窗口，换言之，爬取n篇论文需要打开n个窗口......效率略低，setting函数中
 设置浏览器不加载图片，效率仍然低。
 
 setting中设置 headless, 可以不打开浏览器，浏览器后台运行，但是不能执行下载功能
 
-## 作者邮箱
+### 作者邮箱
 1577305478@qq.com
