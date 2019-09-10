@@ -5,7 +5,7 @@
 Python3 + selenium + Chrome浏览器 + chromedrive
 确保将chromedrive.exe文件放置python3安装目录下
 
-依赖的库有jieba,gensim,pandas，selenium(如未安装，可在命令行下 pip install xxx)
+依赖的库有jieba, gensim, pandas，selenium(如未安装，可在命令行下 pip install xxx)
 
 默认下载目录为E:/test/ 可在spider类的setting函数中修改
 
@@ -15,7 +15,7 @@ Python3 + selenium + Chrome浏览器 + chromedrive
 程序定位到摘要及pdf下载链接，并爬取其内容，浏览器反回至论文库页面，继续爬取下一条论文信息...
 
 每条论文信息存至一位数组，所有论文存入数组构成二维数组，使用pandas中dataframe方法将二维数组转成表格，
-调用datafram中to_html方法生成本地html文件，并在chrome浏览器中打开展示数据。
+调用dataframe中to_html方法生成本地html文件，并在chrome浏览器中打开展示数据。
 
 程序提示“根据论文__内容的相似度进行排序：”，输入论文序号，程序将根据论文摘要匹配相似度并根据相似度对论文重新排序
 
