@@ -27,5 +27,8 @@ selenium模拟人的动作操作浏览器，每次打开链接会在浏览器中
 
 setting中设置 headless, 可以不打开浏览器，浏览器后台运行，但是不能执行下载功能
 
-### 作者邮箱
+部分浏览器不支持问题：请下载谷歌浏览器最新版（76.0）及对应版本的chromedrive (2.47)
+(https://pan.baidu.com/s/1M9NzMS1QiS0eKatKeyONJg 提取码: xwxf)  [58.8M]
+
+### 编者邮箱
 1577305478@qq.com
